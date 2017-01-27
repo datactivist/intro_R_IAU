@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Analyser et visualiser des données de flux</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Joël Gombin (datactivist)" />
+    <link href="libs/remark-css/example.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Analyser et visualiser des données de flux
+## avec R
+### Joël Gombin (datactivist)
+### 27 janvier 2017
+
+---
+
+
+
+
+
+---
+class: inverse, center, middle
+
+# Commencer avec R 
+
+---
+
+## Utiliser RStudio 
+
+
+- présentation de l'interface
+- sources d'aide
+
+---
+
+## Prise en main de Rstudio
+
+- interface utilisateur
+- notion de projets
+
+---
+
+## Trouver de l'aide avec R / Rstudio
+
+- `?help`
+- autocomplete
+- google =&gt; stackoverflow / blogs / github / twitter ([#Rstats](https://twitter.com/search?vertical=default&amp;q=%23rstats&amp;src=typd)) / etc.
+- ressources en ligne. Notamment : [r4ds](http://r4ds.had.co.nz/), [adv-r](http://adv-r.had.co.nz/), [R in action](https://www.manning.com/books/r-in-action-second-edition), [Intro à R](https://github.com/juba/intro-r), [analyse-R](http://larmarange.github.io/analyse-R/)...
+- listes de diffusion et forums francophones : semin-r@mnhn.fr, fltaur@yahoogroupes.fr, r-soc@groupes.renater.fr, http://forums.cirad.fr/logiciel-R/...
+- [meetups R](http://www.meetup.com/fr-FR/rparis/)... 
+
+---
+class: center, middle
+# Scripter, documenter, répliquer
+
+
+---
+## Mon premier script R
+
+## Mon premier notebook R
+
+## Mon premier document Rmarkdown 
+
+
+---
+## Importer des données 
+
+## En GUI ou en CLI
+
+- bouton "Import dataset"
+- en CLI : package `readr` pour le CSV, `haven` pour SPSS / SAS / Stata, `readxl` pour le XLS(X), `rio` pour (presque) tout le reste, `httr` pour APIs
+
+---
+## Importer des données
+
+
+
+
+
+```r
+library(tidyverse)
+
+# import d'un csv avec ';' comme séparateur de champ
+# on peut passer comme premier argument une URL ou un chemin local
+validations2016 &lt;- read_csv2("./data/validations-sur-le-reseau-ferre-nombre-de-validations-par-jour-1er-sem.csv", col_types = cols(
+  .default = col_character(),
+  JOUR = col_date(format = ""),
+  NB_VALD = col_character() # attention, c'est bien un character ("Moins de 5")
+  ))
+
+glimpse(validations2016)
+```
+
+```
+## Observations: 779,712
+## Variables: 8
+## $ JOUR            &lt;date&gt; 2016-01-18, 2016-01-18, 2016-01-18, 2016-01-1...
+## $ CODE_STIF_TRNS  &lt;chr&gt; "100", "100", "100", "100", "100", "100", "100...
+## $ CODE_STIF_RES   &lt;chr&gt; "110", "110", "110", "110", "110", "110", "110...
+## $ CODE_STIF_ARRET &lt;chr&gt; "652", "652", "656", "659", "66", "66", "668",...
+## $ LIBELLE_ARRET   &lt;chr&gt; "PLACE D'ITALIE", "PLACE D'ITALIE", "PLAISANCE...
+## $ ID_REFA_LDA     &lt;chr&gt; "71033", "71033", "71039", "71363", "71607", "...
+## $ CATEGORIE_TITRE &lt;chr&gt; "IMAGINE R", "TST", "TST", "IMAGINE R", "IMAGI...
+## $ NB_VALD         &lt;chr&gt; "6515", "1969", "1121", "2124", "1468", "506",...
+```
+
+---
+class: center, middle, inverse
+
+## Le tidyverse 
+
+---
+## La notion de tidy data
+  
+&gt; “Happy families are all alike; every unhappy family is unhappy in its own way.” – Leo Tolstoy
+  
+&gt; “Tidy datasets are all alike, but every messy dataset is messy in its own way.” – Hadley Wickham
+
+---
+## La notion de tidy data
+  
+- À chaque variable sa propre colonne
+- À chaque observation sa propre ligne
+- À chaque valeur sa propre cellule
+  
+---
+
+## La notion de tidy data
+  
+.center[![tidy data](./img/tidy-1.png)]
+
+---
+## La notion de tidy data
+  
+- Mettre chaque jeu de données dans un `tibble`
+- Mettre chaque variable dans une colonne 
+
+---
+class: center, middle
+# Pivoter (`gather` et `spread`)
+
+---
+## Le problème 
+
+.center[![pivoting data](./img/tidy-9.png)]
+
+---
+## Le problème 
+
+Utile parce que :
+
+- format demandé par telle fonction/logiciel...
+- (ré)agrégation de données
+- nettoyage de données
+- etc. etc.
+
+---
+## Pivoter un jeu de données 
+
+- Reprendre le jeu de données "validations"
+- si on veut le jeu de données au format "large" ?
+- large vers long =&gt; `gather`
+- long vers large =&gt; `spread`
+
+---
+
+
+```r
+valid_large &lt;- validations2016 %&gt;%
+  mutate(validations = if_else(NB_VALD %in% "Moins de 5", 0L, as.integer(NB_VALD))) %&gt;% 
+  select(-NB_VALD) %&gt;% 
+  spread(CATEGORIE_TITRE, validations)
+```
+
+```
+## Warning in replace_with(out, !condition &amp; !is.na(condition), false,
+## "`false`"): NAs introduits lors de la conversion automatique
+```
+
+```r
+glimpse(valid_large)
+```
+
+```
+## Observations: 135,095
+## Variables: 13
+## $ JOUR            &lt;date&gt; 2016-01-18, 2016-01-18, 2016-01-18, 2016-01-1...
+## $ CODE_STIF_TRNS  &lt;chr&gt; "100", "100", "100", "100", "100", "100", "100...
+## $ CODE_STIF_RES   &lt;chr&gt; "110", "110", "110", "110", "110", "110", "110...
+## $ CODE_STIF_ARRET &lt;chr&gt; "652", "656", "659", "66", "668", "669", "671"...
+## $ LIBELLE_ARRET   &lt;chr&gt; "PLACE D'ITALIE", "PLAISANCE", "POISSONNIERE",...
+## $ ID_REFA_LDA     &lt;chr&gt; "71033", "71039", "71363", "71607", "72057", "...
+## $ AMETHYSTE       &lt;int&gt; 1105, 609, 207, 288, 132, 323, 272, 113, 118, ...
+## $ AUTRE TITRE     &lt;int&gt; 497, 90, 73, 340, 232, 124, 200, 22, 59, 93, 1...
+## $ FGT             &lt;int&gt; 1261, 549, 326, 441, 235, 416, 419, 125, 86, 1...
+## $ IMAGINE R       &lt;int&gt; 6515, 1991, 2124, 1468, 1967, 2365, 1829, 650,...
+## $ NAVIGO          &lt;int&gt; 18604, 9443, 6898, 9277, 13118, 15549, 10847, ...
+## $ NON DEFINI      &lt;int&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA...
+## $ TST             &lt;int&gt; 1969, 1121, 601, 506, 579, 1117, 833, 156, 143...
+```
+
+---
+# Filtrer (`filter`)
+
+## Le problème 
+
+Utile pour :
+
+- ne sélectionner que certains cas
+- enlever des cas non pertinents
+- travailler sur un sous-ensemble (spatial, temporel...) du jeu de données 
+
+---
+## Filtrer un jeu de données 
+
+- Reprendre le jeu de données "validations"
+- ne conserver que les validations RATP
+- ne conserver que les validations NAVIGO
+- etc.
+
+---
+
+
+```r
+validations2016 %&gt;% 
+  filter(CODE_STIF_TRNS %in% "100") %&gt;% 
+  glimpse
+```
+
+```
+## Observations: 328,879
+## Variables: 8
+## $ JOUR            &lt;date&gt; 2016-01-18, 2016-01-18, 2016-01-18, 2016-01-1...
+## $ CODE_STIF_TRNS  &lt;chr&gt; "100", "100", "100", "100", "100", "100", "100...
+## $ CODE_STIF_RES   &lt;chr&gt; "110", "110", "110", "110", "110", "110", "110...
+## $ CODE_STIF_ARRET &lt;chr&gt; "652", "652", "656", "659", "66", "66", "668",...
+## $ LIBELLE_ARRET   &lt;chr&gt; "PLACE D'ITALIE", "PLACE D'ITALIE", "PLAISANCE...
+## $ ID_REFA_LDA     &lt;chr&gt; "71033", "71033", "71039", "71363", "71607", "...
+## $ CATEGORIE_TITRE &lt;chr&gt; "IMAGINE R", "TST", "TST", "IMAGINE R", "IMAGI...
+## $ NB_VALD         &lt;chr&gt; "6515", "1969", "1121", "2124", "1468", "506",...
+```
+
+```r
+validations2016 %&gt;% 
+  filter(CATEGORIE_TITRE %in% "NAVIGO") %&gt;% 
+  glimpse
+```
+
+```
+## Observations: 134,774
+## Variables: 8
+## $ JOUR            &lt;date&gt; 2016-01-18, 2016-01-18, 2016-01-18, 2016-01-1...
+## $ CODE_STIF_TRNS  &lt;chr&gt; "100", "100", "100", "100", "100", "100", "100...
+## $ CODE_STIF_RES   &lt;chr&gt; "110", "110", "110", "110", "110", "110", "110...
+## $ CODE_STIF_ARRET &lt;chr&gt; "668", "697", "703", "719", "72", "722", "759"...
+## $ LIBELLE_ARRET   &lt;chr&gt; "PONT DE LEVALLOIS-BECON", "PORTE DES LILAS", ...
+## $ ID_REFA_LDA     &lt;chr&gt; "72057", "71889", "70596", "71313", "71572", "...
+## $ CATEGORIE_TITRE &lt;chr&gt; "NAVIGO", "NAVIGO", "NAVIGO", "NAVIGO", "NAVIG...
+## $ NB_VALD         &lt;chr&gt; "13118", "7230", "3322", "4850", "19218", "403...
+```
+
+---
+
+# Agréger (`group_by` + `summarise`)
+
+## Le problème
+
+- On veut regrouper des observations par un ou plusieurs critères 
+
+---
+## Agréger un jeu de données
+
+- Reprendre le jeu de données "validations"
+- Calculer le nombre total de validation par arrêt par jour
+- Calculer le nombre moyen de validation par réseau par jour
+
+---
+
+
+```r
+validations2016 %&gt;% 
+  mutate(validations = if_else(NB_VALD %in% "Moins de 5", 0L, as.integer(NB_VALD))) %&gt;% 
+  group_by(ID_REFA_LDA, JOUR) %&gt;% 
+  summarise(n = sum(validations))
+```
+
+```
+## Warning in replace_with(out, !condition &amp; !is.na(condition), false,
+## "`false`"): NAs introduits lors de la conversion automatique
+```
+
+```
+## Source: local data frame [130,585 x 3]
+## Groups: ID_REFA_LDA [?]
+## 
+##    ID_REFA_LDA       JOUR     n
+##          &lt;chr&gt;     &lt;date&gt; &lt;int&gt;
+## 1       411281 2016-01-01    80
+## 2       411281 2016-01-02   132
+## 3       411281 2016-01-03   125
+## 4       411281 2016-01-04   618
+## 5       411281 2016-01-05   607
+## 6       411281 2016-01-06   588
+## 7       411281 2016-01-07   572
+## 8       411281 2016-01-08   597
+## 9       411281 2016-01-09   281
+## 10      411281 2016-01-10   138
+## # ... with 130,575 more rows
+```
+
+
+---
+
+
+```r
+validations2016 %&gt;% 
+  mutate(validations = if_else(NB_VALD %in% "Moins de 5", 0L, as.integer(NB_VALD))) %&gt;% 
+  group_by(ID_REFA_LDA, JOUR) %&gt;% 
+  summarise(n = sum(validations)) %&gt;% 
+  group_by(ID_REFA_LDA) %&gt;% 
+  summarise(n = mean(n))
+```
+
+```
+## Warning in replace_with(out, !condition &amp; !is.na(condition), false,
+## "`false`"): NAs introduits lors de la conversion automatique
+```
+
+```
+## # A tibble: 722 × 2
+##    ID_REFA_LDA           n
+##          &lt;chr&gt;       &lt;dbl&gt;
+## 1       411281   486.47802
+## 2       411284   914.89011
+## 3       412687  7045.81319
+## 4       412697 18733.07692
+## 5       412992  7061.30220
+## 6       415852 21915.45055
+## 7        59403    48.36257
+## 8        59420    20.37778
+## 9        59429    15.56069
+## 10       59447    33.12778
+## # ... with 712 more rows
+```
+
+---
+
+# Fusionner (`left_join`)
+
+## Le problème
+
+On veut rapprocher des données issues de deux tables différentes
+
+---
+
+## Fusionner deux jeux de données
+
+- Reprendre le jeu de données "validations"
+- Y adjoindre le référentiel des arrêts de transport
+
+---
+
+
+```r
+arrets &lt;- read_csv2("./data/referentiel-arret-tc-idf.csv", col_types = cols(
+  .default = col_character()
+))
+
+glimpse(arrets)
+```
+
+```
+## Observations: 40,950
+## Variables: 13
+## $ ZDEr_ID_REF_A           &lt;chr&gt; "41118", "33695", "28602", "34526", "2...
+## $ ZDEr_NOM                &lt;chr&gt; "GARE DE ST LEU LA FORET", "Le Carroug...
+## $ ZDEr_ID_TYPE_ARRET      &lt;chr&gt; "1", "5", "5", "5", "5", "5", "5", "2"...
+## $ ZDEr_LIBELLE_TYPE_ARRET &lt;chr&gt; "Gare ferrée", "Arrêt de bus", "Arrêt ...
+## $ ZDEr_X_Y                &lt;chr&gt; "644596.102,6879814.224", "675445,6792...
+## $ ZDLr_ID_REF_A           &lt;chr&gt; "48964", "55354", "45350", "46635", "5...
+## $ ZDLr_NOM                &lt;chr&gt; "Saint-Leu-la-Forêt (Gare)", "Le Carro...
+## $ ZDLr_ID_TYPE_ARRET      &lt;chr&gt; "1", "5", "5", "5", "5", "5", "5", "2"...
+## $ ZDLr_LIBELLE_TYPE_ARRET &lt;chr&gt; "Gare ferrée", "Arrêt de bus", "Arrêt ...
+## $ LDA_ID_REF_A            &lt;chr&gt; "66452", "61143", "71004", "64602", "7...
+## $ LDA_NOM                 &lt;chr&gt; "Saint-Leu-la-Forêt (Gare)", "Le Carro...
+## $ LDA_ID_TYPE_ARRET       &lt;chr&gt; "1", "5", "5", "5", "5", "5", "5", "2"...
+## $ LDA_LIBELLE_TYPE_ARRET  &lt;chr&gt; "Gare ferrée", "Arrêt de bus", "Arrêt ...
+```
+
+---
+
+
+```r
+arrets &lt;- arrets %&gt;% 
+  separate(ZDEr_X_Y, into = c("X", "Y"), sep = ",", remove = TRUE, convert = TRUE)
+
+validations2016 %&gt;% 
+  left_join(arrets, by = c("ID_REFA_LDA" = "LDA_ID_REF_A")) %&gt;% 
+  glimpse
+```
+
+```
+## Observations: 6,269,001
+## Variables: 21
+## $ JOUR                    &lt;date&gt; 2016-01-18, 2016-01-18, 2016-01-18, 2...
+## $ CODE_STIF_TRNS          &lt;chr&gt; "100", "100", "100", "100", "100", "10...
+## $ CODE_STIF_RES           &lt;chr&gt; "110", "110", "110", "110", "110", "11...
+## $ CODE_STIF_ARRET         &lt;chr&gt; "652", "652", "652", "652", "652", "65...
+## $ LIBELLE_ARRET           &lt;chr&gt; "PLACE D'ITALIE", "PLACE D'ITALIE", "P...
+## $ ID_REFA_LDA             &lt;chr&gt; "71033", "71033", "71033", "71033", "7...
+## $ CATEGORIE_TITRE         &lt;chr&gt; "IMAGINE R", "IMAGINE R", "IMAGINE R",...
+## $ NB_VALD                 &lt;chr&gt; "6515", "6515", "6515", "6515", "6515"...
+## $ ZDEr_ID_REF_A           &lt;chr&gt; "9516", "29811", "29812", "27072", "37...
+## $ ZDEr_NOM                &lt;chr&gt; "PLACE D'ITALIE", "PLACE D'ITALIE", "P...
+## $ ZDEr_ID_TYPE_ARRET      &lt;chr&gt; "5", "5", "5", "5", "5", "2", "5", "5"...
+## $ ZDEr_LIBELLE_TYPE_ARRET &lt;chr&gt; "Arrêt de bus", "Arrêt de bus", "Arrêt...
+## $ X                       &lt;dbl&gt; 652764.3, 652784.0, 652641.7, 652664.2...
+## $ Y                       &lt;dbl&gt; 6859230, 6859166, 6859150, 6859330, 68...
+## $ ZDLr_ID_REF_A           &lt;chr&gt; "44371", "44371", "44371", "58742", "4...
+## $ ZDLr_NOM                &lt;chr&gt; "Place d'Italie", "Place d'Italie", "P...
+## $ ZDLr_ID_TYPE_ARRET      &lt;chr&gt; "2", "2", "2", "5", "2", "2", "2", "2"...
+## $ ZDLr_LIBELLE_TYPE_ARRET &lt;chr&gt; "Station de métro", "Station de métro"...
+## $ LDA_NOM                 &lt;chr&gt; "Place d'Italie", "Place d'Italie", "P...
+## $ LDA_ID_TYPE_ARRET       &lt;chr&gt; "2", "2", "2", "2", "2", "2", "2", "2"...
+## $ LDA_LIBELLE_TYPE_ARRET  &lt;chr&gt; "Station de métro", "Station de métro"...
+```
+
+---
+# Visualiser (`ggplot2`)
+
+## Le problème 
+
+Avoir des données, c'est bien, les voir, c'est mieux !
+
+---
+## Visualiser des données
+
+
+Couteau suisse de dataviz *statique* : [`ggplot2`](http://r4ds.had.co.nz/visualize.html)
+
+---
+
+
+```r
+validations2016 %&gt;% 
+  mutate(validations = if_else(NB_VALD %in% "Moins de 5", 0L, as.integer(NB_VALD))) %&gt;% 
+  group_by(JOUR) %&gt;% 
+  summarise(n = sum(validations)) %&gt;% 
+  ggplot(aes(x = JOUR, y = n)) +
+    geom_line()
+```
+
+![](atelier_R_files/figure-html/unnamed-chunk-1-1.png)&lt;!-- --&gt;
+
+---
+## Consommer de la donnée depuis une API
+
+- soit il existe un client R : exemple [API OpenDataSoft](https://github.com/Tutuchan/fodr)
+- soit il faut appeler directement l'API grâce à [httr](https://github.com/hadley/httr)
+
+Difficulté en général : désérialiser le JSON
+
+---
+## Consommer des données de transports publics (GTFS)
+
+- https://github.com/ropensci/stplanr
+- https://github.com/rustyb/GTFSr/blob/master/vignettes/gtfsR_how_to_use.Rmd
+- https://github.com/hansthompson/gtfsnetwork
+
+---
+## Cartographier
+
+- [leaflet](http://rstudio.github.io/leaflet/)
+- [tmap](https://github.com/mtennekes/tmap)
+- [cartography](https://rgeomatic.hypotheses.org/659)
+
+.center[![](https://f.hypotheses.org/wp-content/blogs.dir/1909/files/2015/10/link.png)]
+
+---
+class: inverse, center, middle
+
+# Merci !
+
+Questions : [joel@datactivi.st](mailto:joel@datactivi.st)
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('showSlide', function (slide) {setTimeout(function() {window.dispatchEvent(new Event('resize'));}, 100)});</script>
+
+  </body>
+</html>
