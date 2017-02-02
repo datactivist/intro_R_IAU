@@ -1,0 +1,57 @@
+---
+title: "Importer des données spatiales"
+subtitle: "avec R"
+author: "Joël Gombin (datactivist)"
+date: "2 février 2017"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+options(htmltools.dir.version = FALSE)
+opts_knit$set(cache = TRUE)
+
+```
+
+
+---
+class: inverse, center, middle
+
+# Importer des données géographiques
+
+---
+
+## Télécharger les données
+
+```{r}
+download.file("https://opendata.stif.info/explore/dataset/lda-ref-idf/files/254b4d56dca40ab0f3d7bbc55b5e7849/download/", "./LDA.zip")
+unzip("./LDA.zip", exdir = "./data/LDA/")
+list.files("./data/LDA")
+```
+
+---
+
+## Importer les données
+
+```{r}
+library(sf)
+
+# lecture et traduction directe en simple features
+lda <- st_read("./data/LDA/PL_LDA_19_01_2017.shp")
+
+```
+
+---
+
+## Sauvegarder les données
+
+```{r}
+st_write(lda, "./data/LDA/lda.gpkg")
+```
+

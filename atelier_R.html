@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="author" content="Joël Gombin (datactivist)" />
     <link href="libs/remark-css/example.css" rel="stylesheet" />
+    <link rel="stylesheet" href="images.css" type="text/css" />
   </head>
   <body>
     <textarea id="source">
@@ -26,7 +27,7 @@ class: inverse, center, middle
 
 # Commencer avec R 
 
-http://datactivi.st/intro_R_IAU/atelier_R.html#1
+https://frama.link/IAU_R
 
 ---
 
@@ -245,6 +246,9 @@ validations2016 %&gt;%
 ## $ NB_VALD         &lt;chr&gt; "6515", "1969", "1121", "2124", "1468", "506",...
 ```
 
+---
+
+
 ```r
 validations2016 %&gt;% 
   filter(CATEGORIE_TITRE %in% "NAVIGO") %&gt;% 
@@ -285,8 +289,9 @@ validations2016 %&gt;%
 ```r
 validations2016 %&gt;% 
   mutate(validations = if_else(NB_VALD %in% "Moins de 5", 0L, as.integer(NB_VALD))) %&gt;% 
-  group_by(ID_REFA_LDA, JOUR) %&gt;% 
-  summarise(n = sum(validations))
+  group_by(ID_REFA_LDA) %&gt;% 
+  summarise(n = sum(validations)) %&gt;% 
+  glimpse
 ```
 
 ```
@@ -295,22 +300,41 @@ validations2016 %&gt;%
 ```
 
 ```
-## Source: local data frame [130,585 x 3]
-## Groups: ID_REFA_LDA [?]
-## 
-##    ID_REFA_LDA       JOUR     n
-##          &lt;chr&gt;     &lt;date&gt; &lt;int&gt;
-## 1       411281 2016-01-01    80
-## 2       411281 2016-01-02   132
-## 3       411281 2016-01-03   125
-## 4       411281 2016-01-04   618
-## 5       411281 2016-01-05   607
-## 6       411281 2016-01-06   588
-## 7       411281 2016-01-07   572
-## 8       411281 2016-01-08   597
-## 9       411281 2016-01-09   281
-## 10      411281 2016-01-10   138
-## # ... with 130,575 more rows
+## Observations: 722
+## Variables: 2
+## $ ID_REFA_LDA &lt;chr&gt; "411281", "411284", "412687", "412697", "412992", ...
+## $ n           &lt;int&gt; 88539, 166510, 1282338, 3409420, 1285157, 3988612,...
+```
+
+---
+
+
+```r
+validations2016 %&gt;% 
+  mutate(validations = if_else(NB_VALD %in% "Moins de 5", 0L, as.integer(NB_VALD))) %&gt;% 
+  group_by(ID_REFA_LDA) %&gt;% 
+  mutate(p = validations / sum(validations) * 100) %&gt;% 
+  glimpse
+```
+
+```
+## Warning in replace_with(out, !condition &amp; !is.na(condition), false,
+## "`false`"): NAs introduits lors de la conversion automatique
+```
+
+```
+## Observations: 779,712
+## Variables: 10
+## $ JOUR            &lt;date&gt; 2016-01-18, 2016-01-18, 2016-01-18, 2016-01-1...
+## $ CODE_STIF_TRNS  &lt;chr&gt; "100", "100", "100", "100", "100", "100", "100...
+## $ CODE_STIF_RES   &lt;chr&gt; "110", "110", "110", "110", "110", "110", "110...
+## $ CODE_STIF_ARRET &lt;chr&gt; "652", "652", "656", "659", "66", "66", "668",...
+## $ LIBELLE_ARRET   &lt;chr&gt; "PLACE D'ITALIE", "PLACE D'ITALIE", "PLAISANCE...
+## $ ID_REFA_LDA     &lt;chr&gt; "71033", "71033", "71039", "71363", "71607", "...
+## $ CATEGORIE_TITRE &lt;chr&gt; "IMAGINE R", "TST", "TST", "IMAGINE R", "IMAGI...
+## $ NB_VALD         &lt;chr&gt; "6515", "1969", "1121", "2124", "1468", "506",...
+## $ validations     &lt;int&gt; 6515, 1969, 1121, 2124, 1468, 506, 13118, 124,...
+## $ p               &lt;dbl&gt; 0.139249510, 0.042084771, 0.053922307, 0.15041...
 ```
 
 
@@ -354,80 +378,77 @@ validations2016 %&gt;%
 
 ## Le problème
 
-On veut rapprocher des données issues de deux tables différentes
+On veut rapprocher des données issues de deux tables différentes (dont, pour le fun, une géographique)
 
 ---
 
 ## Fusionner deux jeux de données
 
 - Reprendre le jeu de données "validations"
-- Y adjoindre le référentiel des arrêts de transport
+- Y adjoindre le [référentiel des lieux d'arrêts](https://opendata.stif.info/explore/dataset/lda-ref-idf/information/)
+
+---
+
+Pour l'import et la transformation des LDA, voir [ces slides](./import_donnees_spatiales.html).
+
+
+```r
+library(sf)
+```
+
+```
+## Linking to GEOS 3.5.0, GDAL 2.1.0, proj.4 4.9.2
+```
+
+```r
+lda &lt;- st_read("./data/LDA/lda.gpkg")
+```
+
+```
+## Reading layer `lda.gpkg' from data source `/media/Data/Dropbox/datactivi.st/CR IdF/data/LDA/lda.gpkg' using driver `GPKG'
+## Simple feature collection with 15386 features and 6 fields
+## geometry type:  POLYGON
+## dimension:      XY
+## bbox:           xmin: 564634 ymin: 6762346 xmax: 741291 ymax: 6929309
+## epsg (SRID):    NA
+## proj4string:    +proj=lcc +lat_1=44 +lat_2=49 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80 +units=m +no_defs
+```
 
 ---
 
 
 ```r
-arrets &lt;- read_csv2("./data/referentiel-arret-tc-idf.csv", col_types = cols(
-  .default = col_character()
-))
+lda &lt;- lda %&gt;% 
+  mutate(ID_REFA = as.character(ID_REFA))
 
-glimpse(arrets)
+# validations2016 &lt;- validations2016 %&gt;% 
+#   left_join(lda, by = c("ID_REFA_LDA" = "ID_REFA"))
+# glimpse(validations2016)
+# 
+# alternativement
+
+validations2016_sf &lt;- lda %&gt;% 
+  inner_join(validations2016, by = c("ID_REFA" = "ID_REFA_LDA"))
+glimpse(validations2016_sf)
 ```
 
 ```
-## Observations: 40,950
-## Variables: 13
-## $ ZDEr_ID_REF_A           &lt;chr&gt; "41118", "33695", "28602", "34526", "2...
-## $ ZDEr_NOM                &lt;chr&gt; "GARE DE ST LEU LA FORET", "Le Carroug...
-## $ ZDEr_ID_TYPE_ARRET      &lt;chr&gt; "1", "5", "5", "5", "5", "5", "5", "2"...
-## $ ZDEr_LIBELLE_TYPE_ARRET &lt;chr&gt; "Gare ferrée", "Arrêt de bus", "Arrêt ...
-## $ ZDEr_X_Y                &lt;chr&gt; "644596.102,6879814.224", "675445,6792...
-## $ ZDLr_ID_REF_A           &lt;chr&gt; "48964", "55354", "45350", "46635", "5...
-## $ ZDLr_NOM                &lt;chr&gt; "Saint-Leu-la-Forêt (Gare)", "Le Carro...
-## $ ZDLr_ID_TYPE_ARRET      &lt;chr&gt; "1", "5", "5", "5", "5", "5", "5", "2"...
-## $ ZDLr_LIBELLE_TYPE_ARRET &lt;chr&gt; "Gare ferrée", "Arrêt de bus", "Arrêt ...
-## $ LDA_ID_REF_A            &lt;chr&gt; "66452", "61143", "71004", "64602", "7...
-## $ LDA_NOM                 &lt;chr&gt; "Saint-Leu-la-Forêt (Gare)", "Le Carro...
-## $ LDA_ID_TYPE_ARRET       &lt;chr&gt; "1", "5", "5", "5", "5", "5", "5", "2"...
-## $ LDA_LIBELLE_TYPE_ARRET  &lt;chr&gt; "Gare ferrée", "Arrêt de bus", "Arrêt ...
-```
-
----
-
-
-```r
-arrets &lt;- arrets %&gt;% 
-  separate(ZDEr_X_Y, into = c("X", "Y"), sep = ",", remove = TRUE, convert = TRUE)
-
-validations2016 %&gt;% 
-  left_join(arrets, by = c("ID_REFA_LDA" = "LDA_ID_REF_A")) %&gt;% 
-  glimpse
-```
-
-```
-## Observations: 6,269,001
-## Variables: 21
-## $ JOUR                    &lt;date&gt; 2016-01-18, 2016-01-18, 2016-01-18, 2...
-## $ CODE_STIF_TRNS          &lt;chr&gt; "100", "100", "100", "100", "100", "10...
-## $ CODE_STIF_RES           &lt;chr&gt; "110", "110", "110", "110", "110", "11...
-## $ CODE_STIF_ARRET         &lt;chr&gt; "652", "652", "652", "652", "652", "65...
-## $ LIBELLE_ARRET           &lt;chr&gt; "PLACE D'ITALIE", "PLACE D'ITALIE", "P...
-## $ ID_REFA_LDA             &lt;chr&gt; "71033", "71033", "71033", "71033", "7...
-## $ CATEGORIE_TITRE         &lt;chr&gt; "IMAGINE R", "IMAGINE R", "IMAGINE R",...
-## $ NB_VALD                 &lt;chr&gt; "6515", "6515", "6515", "6515", "6515"...
-## $ ZDEr_ID_REF_A           &lt;chr&gt; "9516", "29811", "29812", "27072", "37...
-## $ ZDEr_NOM                &lt;chr&gt; "PLACE D'ITALIE", "PLACE D'ITALIE", "P...
-## $ ZDEr_ID_TYPE_ARRET      &lt;chr&gt; "5", "5", "5", "5", "5", "2", "5", "5"...
-## $ ZDEr_LIBELLE_TYPE_ARRET &lt;chr&gt; "Arrêt de bus", "Arrêt de bus", "Arrêt...
-## $ X                       &lt;dbl&gt; 652764.3, 652784.0, 652641.7, 652664.2...
-## $ Y                       &lt;dbl&gt; 6859230, 6859166, 6859150, 6859330, 68...
-## $ ZDLr_ID_REF_A           &lt;chr&gt; "44371", "44371", "44371", "58742", "4...
-## $ ZDLr_NOM                &lt;chr&gt; "Place d'Italie", "Place d'Italie", "P...
-## $ ZDLr_ID_TYPE_ARRET      &lt;chr&gt; "2", "2", "2", "5", "2", "2", "2", "2"...
-## $ ZDLr_LIBELLE_TYPE_ARRET &lt;chr&gt; "Station de métro", "Station de métro"...
-## $ LDA_NOM                 &lt;chr&gt; "Place d'Italie", "Place d'Italie", "P...
-## $ LDA_ID_TYPE_ARRET       &lt;chr&gt; "2", "2", "2", "2", "2", "2", "2", "2"...
-## $ LDA_LIBELLE_TYPE_ARRET  &lt;chr&gt; "Station de métro", "Station de métro"...
+## Observations: 774,174
+## Variables: 14
+## $ NOM             &lt;fctr&gt; Mouton Duvernet, Mouton Duvernet, Mouton Duve...
+## $ ID_REFA         &lt;chr&gt; "73653", "73653", "73653", "73653", "73653", "...
+## $ UNITE_ORGA      &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0...
+## $ COMMUNE         &lt;fctr&gt; 75114, 75114, 75114, 75114, 75114, 75114, 751...
+## $ TYPE_ARRET      &lt;fctr&gt; Station de métro, Station de métro, Station d...
+## $ TYPE_OBJET      &lt;fctr&gt; Reference, Reference, Reference, Reference, R...
+## $ JOUR            &lt;date&gt; 2016-01-14, 2016-01-14, 2016-01-15, 2016-01-2...
+## $ CODE_STIF_TRNS  &lt;chr&gt; "100", "100", "100", "100", "100", "100", "100...
+## $ CODE_STIF_RES   &lt;chr&gt; "110", "110", "110", "110", "110", "110", "110...
+## $ CODE_STIF_ARRET &lt;chr&gt; "573", "573", "573", "573", "573", "573", "573...
+## $ LIBELLE_ARRET   &lt;chr&gt; "MOUTON-DUVERNET", "MOUTON-DUVERNET", "MOUTON-...
+## $ CATEGORIE_TITRE &lt;chr&gt; "AMETHYSTE", "NAVIGO", "AUTRE TITRE", "AMETHYS...
+## $ NB_VALD         &lt;chr&gt; "190", "3319", "39", "183", "38", "358", "808"...
+## $ geom            &lt;simple_feature&gt; POLYGON((650769.477399997 6..., POL...
 ```
 
 ---
@@ -449,13 +470,57 @@ Couteau suisse de dataviz *statique* : [`ggplot2`](http://r4ds.had.co.nz/visuali
 ```r
 validations2016 %&gt;% 
   mutate(validations = if_else(NB_VALD %in% "Moins de 5", 0L, as.integer(NB_VALD))) %&gt;% 
-  group_by(JOUR) %&gt;% 
+  group_by(JOUR, CATEGORIE_TITRE) %&gt;% 
   summarise(n = sum(validations)) %&gt;% 
   ggplot(aes(x = JOUR, y = n)) +
-    geom_line()
+  geom_line(aes(color = CATEGORIE_TITRE)) +
+  theme_bw()
 ```
 
-![](atelier_R_files/figure-html/unnamed-chunk-1-1.png)&lt;!-- --&gt;
+&lt;img src="atelier_R_files/figure-html/unnamed-chunk-1-1.png" width="1000px" /&gt;
+
+---
+## Extensions
+
+http://www.ggplot2-exts.org/gallery/
+
+---
+## Une jolie viz
+
+
+```r
+library(tmap)
+library(tmaptools)
+
+valid_reduce &lt;- validations2016 %&gt;% 
+  mutate(validations = if_else(NB_VALD %in% "Moins de 5", 0L, as.integer(NB_VALD))) %&gt;% 
+  group_by(JOUR, ID_REFA_LDA) %&gt;% 
+  summarise(validations = sum(validations))
+valid_reduce_sf &lt;- lda %&gt;% 
+  inner_join(valid_reduce, by = c("ID_REFA" = "ID_REFA_LDA"))
+fonds_osm &lt;- read_osm("Paris", type = "stamen-toner")
+valid_reduce_sf &lt;- st_transform(valid_reduce_sf, get_projection(fonds_osm))
+range &lt;- unique(valid_reduce_sf$JOUR)
+for (i in as.character(range)) {
+  png(paste0("validations/validations", i, ".png"))
+  t &lt;- tm_shape(fonds_osm) +
+      tm_raster() +
+    tm_shape(valid_reduce_sf %&gt;% filter(JOUR %in% lubridate::ymd(i))) + 
+      tm_fill(col = "validations", palette = "Reds", breaks = c(0, 500, 1000, 5000, 10000, 50000, 100000, 200000), contrast = c(0,1)) +
+    tm_facets(by = "JOUR", ncol = 1, nrow = 1) +
+      tm_legend(legend.outside = TRUE, legend.outside.position = "bottom", legend.format = list(text.separator = "à")) +
+    tm_layout(title = lubridate::stamp_date("lundi 1 juin 1999", locale = "fr_FR")(lubridate::ymd(as.character(i))), title.snap.to.legend = TRUE)
+  print(t)
+  dev.off()
+}
+system('convert -delay 30 validations/validations*.png "animation.gif"')
+system("gifsicle -b -O3 --colors 256 animation.gif")
+```
+
+---
+## Une jolie viz
+
+.image-80[![gif animé](./animation.gif)]
 
 ---
 ## Consommer de la donnée depuis une API
@@ -479,7 +544,7 @@ Difficulté en général : désérialiser le JSON
 - [tmap](https://github.com/mtennekes/tmap)
 - [cartography](https://rgeomatic.hypotheses.org/659)
 
-.center[![](https://f.hypotheses.org/wp-content/blogs.dir/1909/files/2015/10/link.png)]
+.image-80[![](https://f.hypotheses.org/wp-content/blogs.dir/1909/files/2015/10/link.png)]
 
 ---
 class: inverse, center, middle
@@ -488,7 +553,7 @@ class: inverse, center, middle
 
 Questions : [joel@datactivi.st](mailto:joel@datactivi.st)
     </textarea>
-<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script src="libs/remark-latest.min.js"></script>
 <script>var slideshow = remark.create({
 "highlightStyle": "github",
 "highlightLines": true,

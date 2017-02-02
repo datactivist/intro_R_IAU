@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Importer des données spatiales</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Joël Gombin (datactivist)" />
+    <link href="libs/remark-css/example.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Importer des données spatiales
+## avec R
+### Joël Gombin (datactivist)
+### 2 février 2017
+
+---
+
+
+
+
+
+---
+class: inverse, center, middle
+
+# Importer des données géographiques
+
+---
+
+## Télécharger les données
+
+
+```r
+download.file("https://opendata.stif.info/explore/dataset/lda-ref-idf/files/254b4d56dca40ab0f3d7bbc55b5e7849/download/", "./LDA.zip")
+unzip("./LDA.zip", exdir = "./data/LDA/")
+list.files("./data/LDA")
+```
+
+```
+## [1] "PL_LDA_19_01_2017.cpg"     "PL_LDA_19_01_2017.dbf"    
+## [3] "PL_LDA_19_01_2017.prj"     "PL_LDA_19_01_2017.sbn"    
+## [5] "PL_LDA_19_01_2017.sbx"     "PL_LDA_19_01_2017.shp"    
+## [7] "PL_LDA_19_01_2017.shp.xml" "PL_LDA_19_01_2017.shx"
+```
+
+---
+
+## Importer les données
+
+
+```r
+library(sf)
+```
+
+```
+## Linking to GEOS 3.5.0, GDAL 2.1.0, proj.4 4.9.2
+```
+
+```r
+# lecture et traduction directe en simple features
+lda &lt;- st_read("./data/LDA/PL_LDA_19_01_2017.shp")
+```
+
+```
+## Reading layer `PL_LDA_19_01_2017' from data source `/media/Data/Dropbox/datactivi.st/CR IdF/data/LDA/PL_LDA_19_01_2017.shp' using driver `ESRI Shapefile'
+## Simple feature collection with 15386 features and 6 fields
+## geometry type:  POLYGON
+## dimension:      XY
+## bbox:           xmin: 564634 ymin: 6762346 xmax: 741291 ymax: 6929309
+## epsg (SRID):    NA
+## proj4string:    +proj=lcc +lat_1=44 +lat_2=49 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80 +units=m +no_defs
+```
+
+---
+
+## Sauvegarder les données
+
+
+```r
+st_write(lda, "./data/LDA/lda.gpkg")
+```
+
+```
+## Writing layer `lda.gpkg' to data source `./data/LDA/lda.gpkg' using driver `GPKG'
+## features:       15386
+## fields:         6
+## geometry type:  POLYGON
+```
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('showSlide', function (slide) {setTimeout(function() {window.dispatchEvent(new Event('resize'));}, 100)});</script>
+
+  </body>
+</html>
